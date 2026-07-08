@@ -85,6 +85,7 @@ model User {
   createdReports StatusReport[] @relation("ReportCreator")
   ownedRisks     Risk[]      @relation("RiskOwner")
   projectVisibilityGrants ProjectVisibilityGrant[]
+  refreshTokens           RefreshToken[]
 
   @@index([role])
   @@index([departmentId])
@@ -191,6 +192,20 @@ model Budget {
   @@index([projectId])
   @@index([periodStart])
   @@index([projectId, year, quarter])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  jti       String    @unique
+  userId    Int
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model ProjectVisibilityGrant {
