@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
-import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema } from '../utils/validation';
+import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema, computeReportingPeriod } from '../utils/validation';
 import { hasProjectAccess } from '../utils/access';
 import { notifyAdminsAndExecs } from '../utils/notifications';
 
@@ -22,12 +22,17 @@ router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR
       throw new HttpError(401, 'Unauthenticated');
     }
 
+    const { reportingPeriodStart, reportingPeriodEnd } = computeReportingPeriod(
+      parsed.data.year,
+      parsed.data.month,
+    );
+
     const report = await prisma.statusReport.create({
       data: {
         projectId,
         createdById: userId,
-        reportingPeriodStart: new Date(parsed.data.reportingPeriodStart),
-        reportingPeriodEnd: new Date(parsed.data.reportingPeriodEnd),
+        reportingPeriodStart,
+        reportingPeriodEnd,
         dueDate: new Date(parsed.data.dueDate),
         status: 'DRAFT',
         rag: (parsed.data.rag ?? 'AMBER') as 'GREEN' | 'AMBER' | 'RED',
@@ -164,8 +169,6 @@ router.patch('/status-reports/:id', authenticate, authorize('CONTRIBUTOR', 'MANA
     }
 
     const updateData: {
-      reportingPeriodStart?: Date;
-      reportingPeriodEnd?: Date;
       dueDate?: Date;
       rag?: 'GREEN' | 'AMBER' | 'RED';
       progressPercentage?: number;
@@ -173,12 +176,6 @@ router.patch('/status-reports/:id', authenticate, authorize('CONTRIBUTOR', 'MANA
       blockers?: string | null;
     } = {};
 
-    if (parsed.data.reportingPeriodStart) {
-      updateData.reportingPeriodStart = new Date(parsed.data.reportingPeriodStart);
-    }
-    if (parsed.data.reportingPeriodEnd) {
-      updateData.reportingPeriodEnd = new Date(parsed.data.reportingPeriodEnd);
-    }
     if (parsed.data.dueDate) {
       updateData.dueDate = new Date(parsed.data.dueDate);
     }
