@@ -138,3 +138,16 @@ export interface PortfolioResponse {
     projects: ProjectSummary[];
   };
 }
+
+export interface NotificationItem {
+  id: number;
+  userId: number;
+  type: 'RAG_RED_PUBLISHED' | 'CRITICAL_RISK_ESCALATED' | string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationItem[];
+}

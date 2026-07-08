@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getRoleHomePath, getRoleLabel } from '@/lib/routes';
 import type { SessionUser } from '@/lib/types';
 import { LogoutButton } from './logout-button';
+import { NotificationMenu } from './notification-menu';
 import { SessionStatus } from './session-status';
 
 const roleLinks = [
@@ -42,6 +43,7 @@ export function AppShell({
                 {link.label}
               </Link>
             ))}
+            <NotificationMenu />
             <SessionStatus />
             <LogoutButton />
           </div>

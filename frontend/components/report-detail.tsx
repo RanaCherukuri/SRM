@@ -1,4 +1,5 @@
 import type { StatusReportDetail } from '@/lib/types';
+import { RagBadge } from './rag-badge';
 
 export function ReportDetailPanel({
   report,
@@ -23,7 +24,7 @@ export function ReportDetailPanel({
       </section>
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 text-sm text-slate-300">
         <div className="grid gap-2 md:grid-cols-2">
-          <p>RAG: {report.rag}</p>
+          <p>RAG: <RagBadge value={report.rag} /></p>
           <p>Progress: {report.progressPercentage}%</p>
           <p>Due: {new Date(report.dueDate).toLocaleDateString()}</p>
           <p>Submitted: {report.submittedAt ? new Date(report.submittedAt).toLocaleString() : 'Not yet'}</p>

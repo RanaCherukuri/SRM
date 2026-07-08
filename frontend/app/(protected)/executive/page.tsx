@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getProtectedData, requireRole, requireServerSession } from '@/lib/server-auth';
+import { HealthBadge } from '@/components/rag-badge';
 
 export default async function ExecutiveDashboardPage() {
   const session = await requireServerSession();
@@ -28,7 +29,7 @@ export default async function ExecutiveDashboardPage() {
                   {project.name} <span className="text-slate-400">({project.code})</span>
                 </h2>
                 <p className="mt-2 text-sm text-slate-300">
-                  {project.department.name} · {project.status} · health {project.health}
+                  {project.department.name} · {project.status} · health <HealthBadge value={project.health} />
                   {project.isAtRisk ? ' · at risk' : ''}
                 </p>
               </div>

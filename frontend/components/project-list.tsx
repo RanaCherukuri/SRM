@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ProjectSummary } from '@/lib/types';
+import { HealthBadge } from './rag-badge';
 
 export function ProjectList({
   projects,
@@ -21,8 +22,8 @@ export function ProjectList({
                 {project.name} <span className="text-slate-400">({project.code})</span>
               </h3>
               <p className="mt-2 text-sm text-slate-300">
-                {project.department.name} · {project.status} · health {project.health}
-                {project.isAtRisk ? ' · at risk' : ''}
+                {project.department.name} · {project.status} · health <HealthBadge value={project.health} />
+                {project.isAtRisk ? ' · at risk' : ' · stable'}
               </p>
               <p className="mt-1 text-sm text-slate-400">Owner: {project.owner.fullName}</p>
             </div>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ProjectDetail } from '@/lib/types';
+import { HealthBadge, RagBadge } from './rag-badge';
 
 export function ProjectDetailPanel({
   project,
@@ -15,7 +16,7 @@ export function ProjectDetailPanel({
           {project.name} <span className="text-slate-400">({project.code})</span>
         </h2>
         <p className="mt-3 text-sm text-slate-300">
-          {project.department.name} · {project.status} · health {project.health}
+          {project.department.name} · {project.status} · health <HealthBadge value={project.health} />
           {project.isAtRisk ? ' · at risk' : ''}
         </p>
         <p className="mt-3 text-sm text-slate-400">{project.description ?? 'No description yet.'}</p>
@@ -34,7 +35,9 @@ export function ProjectDetailPanel({
             <article key={report.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p>Report #{report.id} · {report.status} · {report.rag} · {report.progressPercentage}%</p>
+                  <p>
+                    Report #{report.id} · {report.status} · <RagBadge value={report.rag} /> · {report.progressPercentage}%
+                  </p>
                   <p className="text-slate-400">Author: {report.createdBy.fullName}</p>
                 </div>
                 {reportBasePath ? (
@@ -53,7 +56,7 @@ export function ProjectDetailPanel({
         <div className="mt-4 grid gap-3">
           {project.risks.map((risk) => (
             <article key={risk.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
-              <p>{risk.title} · {risk.severity}/{risk.likelihood}{risk.isEscalated ? ' · escalated' : ''}</p>
+              <p>{risk.title} · {risk.severity}/{risk.likelihood}{risk.isEscalated ? ' · escalated' : ' · active'}</p>
               <p className="text-slate-400">Owner: {risk.owner.fullName}</p>
             </article>
           ))}
