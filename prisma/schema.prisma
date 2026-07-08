@@ -161,6 +161,7 @@ model Risk {
   mitigationPlan  String?
   ownerId         Int
   isEscalated     Boolean         @default(false)
+  resolvedAt      DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 

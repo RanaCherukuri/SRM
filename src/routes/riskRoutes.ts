@@ -124,4 +124,62 @@ router.patch('/risks/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), re
   }
 });
 
+router.patch('/risks/:id/resolve', authenticate, authorize('MANAGER'), requireDepartmentScope('risk'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthenticated');
+    }
+
+    const riskId = Number(req.params.id);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const risk = await tx.risk.findUnique({ where: { id: riskId } });
+      if (!risk) {
+        throw new HttpError(404, 'Risk not found');
+      }
+      if (risk.resolvedAt) {
+        throw new HttpError(409, 'Risk is already resolved');
+      }
+
+      const resolvedRisk = await tx.risk.update({
+        where: { id: riskId },
+        data: { resolvedAt: new Date(), isEscalated: false },
+      });
+
+      // Re-evaluate project isAtRisk: clear only if no other unresolved CRITICAL risks remain
+      const unresolvedCriticalCount = await tx.risk.count({
+        where: {
+          projectId: risk.projectId,
+          severity: 'CRITICAL',
+          resolvedAt: null,
+          id: { not: riskId },
+        },
+      });
+
+      let project = null;
+      if (unresolvedCriticalCount === 0) {
+        project = await tx.project.update({
+          where: { id: risk.projectId },
+          data: { isAtRisk: false },
+          select: { id: true, isAtRisk: true },
+        });
+      } else {
+        project = await tx.project.findUnique({
+          where: { id: risk.projectId },
+          select: { id: true, isAtRisk: true },
+        });
+      }
+
+      return { risk: resolvedRisk, project, remainingUnresolvedCritical: unresolvedCriticalCount };
+    });
+
+    return res.status(200).json({ result });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return next(error);
+  }
+});
+
 export default router;
