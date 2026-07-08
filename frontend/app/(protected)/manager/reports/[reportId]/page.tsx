@@ -1,0 +1,27 @@
+import { ReportDetailPanel } from '@/components/report-detail';
+import { getStatusReportDetail, requireRole, requireServerSession } from '@/lib/server-auth';
+
+export default async function ManagerReportPage({
+  params,
+}: {
+  params: Promise<{ reportId: string }>;
+}) {
+  const session = await requireServerSession();
+  requireRole(session.user.role, ['MANAGER']);
+
+  const reportId = Number((await params).reportId);
+  const { report } = await getStatusReportDetail(reportId, session.accessToken);
+
+  return (
+    <div className="grid gap-6">
+      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300">Manager report view</p>
+        <h1 className="mt-3 text-3xl font-semibold text-white">Publish authority within department scope</h1>
+      </section>
+      <ReportDetailPanel
+        report={report}
+        capabilityLabel="Managers can publish submitted reports in their own department, but they are still blocked on reports outside department scope."
+      />
+    </div>
+  );
+}
