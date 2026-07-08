@@ -1,13 +1,14 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
 import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema } from '../utils/validation';
+import { hasProjectAccess } from '../utils/access';
 
 const router = Router();
 
-router.post('/:id/status-reports', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = createStatusReportSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -44,7 +45,98 @@ router.post('/:id/status-reports', authenticate, authorize('CONTRIBUTOR', 'MANAG
   }
 });
 
-router.patch('/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.get('/status-reports/:id', authenticate, authorize('ADMIN', 'EXECUTIVE', 'MANAGER', 'CONTRIBUTOR', 'VIEWER'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthenticated');
+    }
+
+    const reportId = Number(req.params.id);
+    const report = await prisma.statusReport.findUnique({
+      where: { id: reportId },
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        rag: true,
+        progressPercentage: true,
+        summary: true,
+        blockers: true,
+        reportingPeriodStart: true,
+        reportingPeriodEnd: true,
+        dueDate: true,
+        submittedAt: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!report) {
+      throw new HttpError(404, 'Status report not found');
+    }
+
+    const allowed = await hasProjectAccess(req.user, report.projectId);
+    if (!allowed) {
+      if (req.user.role === 'VIEWER') {
+        throw new HttpError(403, 'Report outside granted project scope');
+      }
+
+      throw new HttpError(403, 'Report outside department scope');
+    }
+
+    return res.status(200).json({
+      report: {
+        id: report.id,
+        projectId: report.projectId,
+        status: report.status,
+        rag: report.rag,
+        progressPercentage: report.progressPercentage,
+        summary: report.summary,
+        blockers: report.blockers,
+        reportingPeriodStart: report.reportingPeriodStart,
+        reportingPeriodEnd: report.reportingPeriodEnd,
+        dueDate: report.dueDate,
+        submittedAt: report.submittedAt,
+        publishedAt: report.publishedAt,
+        createdAt: report.createdAt,
+        updatedAt: report.updatedAt,
+        createdBy: {
+          id: report.createdBy.id,
+          email: report.createdBy.email,
+          fullName: `${report.createdBy.firstName} ${report.createdBy.lastName}`,
+        },
+        project: report.project,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/status-reports/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = updateStatusReportSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -116,7 +208,7 @@ router.patch('/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireD
   }
 });
 
-router.post('/:id/submit', authenticate, authorize('CONTRIBUTOR'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/status-reports/:id/submit', authenticate, authorize('CONTRIBUTOR'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const reportId = Number(req.params.id);
     const userId = req.user?.sub;
@@ -166,7 +258,7 @@ router.post('/:id/submit', authenticate, authorize('CONTRIBUTOR'), requireDepart
   }
 });
 
-router.post('/:id/publish', authenticate, authorize('MANAGER'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/status-reports/:id/publish', authenticate, authorize('MANAGER'), requireDepartmentScope('statusReport'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = publishStatusReportSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -225,8 +317,7 @@ router.post('/:id/publish', authenticate, authorize('MANAGER'), requireDepartmen
       return { reportId, project, shouldNotify: newRag === 'RED' && existing.rag !== 'RED' };
     });
 
-    const shouldNotify = transactionResult.shouldNotify;
-    if (shouldNotify) {
+    if (transactionResult.shouldNotify) {
       void (async () => {
         try {
           const department = await prisma.department.findFirst({

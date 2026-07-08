@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/prisma';
+import { UserRole } from '@prisma/client';
 import { HttpError } from './errorHandler';
 import { verifyAccessToken } from '../utils/jwt';
+import { getScopedProjectId, hasProjectAccess } from '../utils/access';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     sub: number;
-    role: string;
+    role: UserRole;
     departmentId?: number | null;
   };
 }
@@ -35,7 +36,7 @@ export function authenticate(req: AuthenticatedRequest, _res: Response, next: Ne
   }
 }
 
-export function authorize(...allowedRoles: string[]) {
+export function authorize(...allowedRoles: UserRole[]) {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new HttpError(401, 'Unauthenticated'));
@@ -55,43 +56,30 @@ export function requireDepartmentScope(resourceType: 'project' | 'statusReport' 
       return next(new HttpError(401, 'Unauthenticated'));
     }
 
-    if (req.user.role === 'ADMIN' || req.user.role === 'EXECUTIVE') {
-      return next();
-    }
-
-    if (!req.user.departmentId) {
-      return next(new HttpError(403, 'Department scope required'));
-    }
-
     const resourceId = req.params.id ? Number(req.params.id) : undefined;
     if (!resourceId) {
+      if (req.user.role === 'VIEWER') {
+        return next(new HttpError(403, 'Project grant scope required'));
+      }
+
+      if ((req.user.role === 'MANAGER' || req.user.role === 'CONTRIBUTOR') && !req.user.departmentId) {
+        return next(new HttpError(403, 'Department scope required'));
+      }
+
       return next();
     }
 
-    let targetDepartmentId: number | null = null;
-
-    if (resourceType === 'project') {
-      const project = await prisma.project.findUnique({ where: { id: resourceId }, select: { departmentId: true } });
-      targetDepartmentId = project?.departmentId ?? null;
-    } else if (resourceType === 'statusReport') {
-      const report = await prisma.statusReport.findUnique({
-        where: { id: resourceId },
-        select: { project: { select: { departmentId: true } } },
-      });
-      targetDepartmentId = report?.project.departmentId ?? null;
-    } else if (resourceType === 'risk') {
-      const risk = await prisma.risk.findUnique({
-        where: { id: resourceId },
-        select: { project: { select: { departmentId: true } } },
-      });
-      targetDepartmentId = risk?.project.departmentId ?? null;
-    }
-
-    if (!targetDepartmentId) {
+    const projectId = await getScopedProjectId(resourceType, resourceId);
+    if (!projectId) {
       return next(new HttpError(404, 'Resource not found'));
     }
 
-    if (targetDepartmentId !== req.user.departmentId) {
+    const allowed = await hasProjectAccess(req.user, projectId);
+    if (!allowed) {
+      if (req.user.role === 'VIEWER') {
+        return next(new HttpError(403, 'Resource outside granted project scope'));
+      }
+
       return next(new HttpError(403, 'Resource outside department scope'));
     }
 

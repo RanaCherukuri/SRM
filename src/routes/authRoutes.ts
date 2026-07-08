@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import { UserRole } from '@prisma/client';
 import { prisma } from '../config/prisma';
-import { signAccessToken, signRefreshToken } from '../utils/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { HttpError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -11,7 +12,39 @@ const COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   maxAge: REFRESH_TOKEN_TTL_MS,
+  path: '/',
 };
+
+const USER_ROLES: UserRole[] = ['ADMIN', 'EXECUTIVE', 'MANAGER', 'CONTRIBUTOR', 'VIEWER'];
+
+function isUserRole(value: string | undefined): value is UserRole {
+  return Boolean(value && USER_ROLES.includes(value as UserRole));
+}
+
+function serializeUser(user: {
+  id: number;
+  email: string;
+  role: UserRole;
+  departmentId: number | null;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    departmentId: user.departmentId,
+  };
+}
+
+function getCookieValue(cookieHeader: string | undefined, name: string) {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookies = cookieHeader.split(';').map((chunk) => chunk.trim());
+  const match = cookies.find((chunk) => chunk.startsWith(`${name}=`));
+
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
+}
 
 router.post('/register', async (req, res, next) => {
   try {
@@ -40,17 +73,12 @@ router.post('/register', async (req, res, next) => {
         passwordHash,
         firstName,
         lastName,
-        role: role ? (role as any) : 'VIEWER',
+        role: isUserRole(role) ? role : 'VIEWER',
         departmentId: departmentId ?? null,
       },
     });
 
-    res.status(201).json({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      departmentId: user.departmentId,
-    });
+    res.status(201).json(serializeUser(user));
   } catch (error) {
     next(error);
   }
@@ -78,15 +106,41 @@ router.post('/login', async (req, res, next) => {
     const refreshToken = signRefreshToken(payload);
 
     res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
-    res.json({
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        departmentId: user.departmentId,
+    res.json({ accessToken, user: serializeUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const refreshToken = getCookieValue(req.headers.cookie, 'refreshToken');
+    if (!refreshToken) {
+      throw new HttpError(401, 'Missing refresh token');
+    }
+
+    const payload = verifyRefreshToken(refreshToken);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        departmentId: true,
       },
     });
+
+    if (!user) {
+      throw new HttpError(401, 'Session user no longer exists');
+    }
+
+    const accessToken = signAccessToken({
+      sub: user.id,
+      role: user.role,
+      departmentId: user.departmentId,
+    });
+
+    res.json({ accessToken, user: serializeUser(user) });
   } catch (error) {
     next(error);
   }

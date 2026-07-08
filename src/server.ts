@@ -48,10 +48,8 @@ app.use('/auth/login', loginLimiter);
 app.use('/auth/register', registerLimiter);
 app.use('/auth', authRoutes);
 app.use('/projects', projectRoutes);
-app.use('/projects', reportRoutes);
-app.use('/status-reports', reportRoutes);
-app.use('/projects', riskRoutes);
-app.use('/risks', riskRoutes);
+app.use(reportRoutes);
+app.use(riskRoutes);
 app.use('/dashboard', dashboardRoutes);
 
 app.use(errorHandler);

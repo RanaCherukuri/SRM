@@ -84,6 +84,7 @@ model User {
   ownedProjects Project[]   @relation("ProjectOwner")
   createdReports StatusReport[] @relation("ReportCreator")
   ownedRisks     Risk[]      @relation("RiskOwner")
+  projectVisibilityGrants ProjectVisibilityGrant[]
 
   @@index([role])
   @@index([departmentId])
@@ -111,6 +112,7 @@ model Project {
   statusReports      StatusReport[]
   risks              Risk[]
   budgets            Budget[]
+  viewerGrants       ProjectVisibilityGrant[]
 
   @@index([status])
   @@index([departmentId])
@@ -189,4 +191,18 @@ model Budget {
   @@index([projectId])
   @@index([periodStart])
   @@index([projectId, year, quarter])
+}
+
+model ProjectVisibilityGrant {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  projectId Int
+  createdAt DateTime @default(now())
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
 }

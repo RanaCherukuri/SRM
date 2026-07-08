@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
@@ -7,7 +7,7 @@ import { createRiskSchema, updateRiskSchema } from '../utils/validation';
 
 const router = Router();
 
-router.post('/:id/risks', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/projects/:id/risks', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = createRiskSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -66,7 +66,7 @@ router.post('/:id/risks', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), req
   }
 });
 
-router.patch('/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('risk'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/risks/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('risk'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = updateRiskSchema.safeParse(req.body);
     if (!parsed.success) {

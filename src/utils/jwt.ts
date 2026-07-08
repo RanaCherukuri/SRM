@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { UserRole } from '@prisma/client';
 
 const isLocalDev = process.env.NODE_ENV === 'development' && !process.env.CI;
 const JWT_SECRET = process.env.JWT_SECRET ?? (isLocalDev ? 'dev-secret' : undefined);
@@ -16,7 +17,7 @@ const resolvedRefreshSecret = requireEnv(JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET
 
 export interface TokenPayload {
   sub: number;
-  role: string;
+  role: UserRole;
   departmentId?: number | null;
 }
 
@@ -36,7 +37,7 @@ export function verifyAccessToken(token: string): TokenPayload {
 
   return {
     sub: Number(decoded.sub),
-    role: decoded.role,
+    role: decoded.role as UserRole,
     departmentId: decoded.departmentId ? Number(decoded.departmentId) : null,
   };
 }
@@ -49,7 +50,7 @@ export function verifyRefreshToken(token: string): TokenPayload {
 
   return {
     sub: Number(decoded.sub),
-    role: decoded.role,
+    role: decoded.role as UserRole,
     departmentId: decoded.departmentId ? Number(decoded.departmentId) : null,
   };
 }
