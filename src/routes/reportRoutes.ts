@@ -4,7 +4,7 @@ import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
 import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema, computeReportingPeriod } from '../utils/validation';
-import { hasProjectAccess } from '../utils/access';
+import { getAccessibleProjectWhere, hasProjectAccess } from '../utils/access';
 import { notifyAdminsAndExecs } from '../utils/notifications';
 
 const router = Router();
@@ -47,6 +47,89 @@ router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return res.status(409).json({ error: 'A report for this project and reporting period already exists' });
     }
+    return next(error);
+  }
+});
+
+router.get('/status-reports', authenticate, authorize('ADMIN', 'EXECUTIVE', 'MANAGER', 'CONTRIBUTOR', 'VIEWER'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthenticated');
+    }
+
+    const mine = req.query.mine === 'true';
+    const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : undefined;
+    const projectId = typeof req.query.projectId === 'string' ? Number(req.query.projectId) : undefined;
+
+    const reports = await prisma.statusReport.findMany({
+      where: {
+        ...(mine ? { createdById: req.user.sub } : {}),
+        ...(status && ['DRAFT', 'SUBMITTED', 'PUBLISHED'].includes(status) ? { status: status as 'DRAFT' | 'SUBMITTED' | 'PUBLISHED' } : {}),
+        ...(projectId ? { projectId } : {}),
+        project: getAccessibleProjectWhere(req.user),
+      },
+      orderBy: [{ reportingPeriodEnd: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        rag: true,
+        progressPercentage: true,
+        reportingPeriodStart: true,
+        reportingPeriodEnd: true,
+        dueDate: true,
+        submittedAt: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      reports: reports.map((report) => ({
+        id: report.id,
+        projectId: report.projectId,
+        status: report.status,
+        rag: report.rag,
+        progressPercentage: report.progressPercentage,
+        reportingPeriodStart: report.reportingPeriodStart,
+        reportingPeriodEnd: report.reportingPeriodEnd,
+        dueDate: report.dueDate,
+        submittedAt: report.submittedAt,
+        publishedAt: report.publishedAt,
+        createdAt: report.createdAt,
+        updatedAt: report.updatedAt,
+        createdBy: {
+          id: report.createdBy.id,
+          fullName: `${report.createdBy.firstName} ${report.createdBy.lastName}`,
+          email: report.createdBy.email,
+        },
+        project: report.project,
+      })),
+    });
+  } catch (error) {
     return next(error);
   }
 });

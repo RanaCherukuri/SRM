@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ProjectDetailPanel } from '@/components/project-detail';
 import { getProjectDetail, requireRole, requireServerSession } from '@/lib/server-auth';
 
@@ -17,6 +18,14 @@ export default async function ContributorProjectPage({
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">Contributor project view</p>
         <h1 className="mt-3 text-3xl font-semibold text-white">Department project context</h1>
+        <div className="mt-4">
+          <Link
+            href={`/contributor/projects/${projectId}/new-report`}
+            className="rounded-full border border-cyan-500/50 bg-cyan-500/20 px-3 py-1.5 text-sm font-semibold text-cyan-200"
+          >
+            Create new draft report
+          </Link>
+        </div>
       </section>
       <ProjectDetailPanel project={project} reportBasePath="/contributor/reports" />
     </div>

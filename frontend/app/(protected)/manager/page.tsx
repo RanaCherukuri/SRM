@@ -1,11 +1,16 @@
 import { ProjectList } from '@/components/project-list';
-import { getProtectedData, requireRole, requireServerSession } from '@/lib/server-auth';
+import { ManagerWorkspacePanels } from '@/components/manager-workspace-panels';
+import { getProtectedData, getRiskList, getStatusReportsList, requireRole, requireServerSession } from '@/lib/server-auth';
 
 export default async function ManagerWorkspacePage() {
   const session = await requireServerSession();
   requireRole(session.user.role, ['MANAGER']);
 
-  const { projects } = await getProtectedData('/projects', session.accessToken);
+  const [{ projects }, { reports }, { risks }] = await Promise.all([
+    getProtectedData('/projects', session.accessToken),
+    getStatusReportsList(session.accessToken, { status: 'SUBMITTED' }),
+    getRiskList(session.accessToken, { includeResolved: false }),
+  ]);
 
   return (
     <div className="grid gap-6">
@@ -17,6 +22,7 @@ export default async function ManagerWorkspacePage() {
         </p>
       </section>
       <ProjectList projects={projects} basePath="/manager/projects" />
+      <ManagerWorkspacePanels submittedReports={reports} risks={risks} />
     </div>
   );
 }

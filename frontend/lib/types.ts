@@ -20,6 +20,8 @@ export interface ProjectSummary {
   health: string;
   isAtRisk: boolean;
   updatedAt?: string;
+  plannedEndDate?: string | null;
+  actualEndDate?: string | null;
   department: {
     id: number;
     name: string;
@@ -39,6 +41,7 @@ export interface ProjectSummary {
 
 export interface ReportSummary {
   id: number;
+  projectId: number;
   status: string;
   rag: string;
   progressPercentage: number;
@@ -52,19 +55,45 @@ export interface ReportSummary {
     fullName: string;
     email: string;
   };
+  project: {
+    id: number;
+    name: string;
+    code: string;
+    department: {
+      id: number;
+      name: string;
+      code: string;
+    };
+  };
 }
 
 export interface RiskSummary {
   id: number;
+  projectId: number;
   title: string;
+  description?: string | null;
   severity: string;
   likelihood: string;
+  mitigationPlan?: string | null;
+  ownerId?: number;
   isEscalated: boolean;
+  resolvedAt?: string | null;
+  createdAt?: string;
   updatedAt: string;
   owner: {
     id: number;
     fullName: string;
     email: string;
+  };
+  project: {
+    id: number;
+    name: string;
+    code: string;
+    department: {
+      id: number;
+      name: string;
+      code: string;
+    };
   };
 }
 
@@ -136,7 +165,55 @@ export interface PortfolioResponse {
       openRisks: number;
     };
     projects: ProjectSummary[];
+    ragCountsByDepartment?: Array<{
+      department: {
+        id: number;
+        name: string;
+        code: string;
+      };
+      green: number;
+      amber: number;
+      red: number;
+      unknown: number;
+    }>;
+    overdueProjects?: Array<{
+      id: number;
+      name: string;
+      code: string;
+      status: string;
+      health: string;
+      isAtRisk: boolean;
+      plannedEndDate: string | null;
+      department: {
+        id: number;
+        name: string;
+        code: string;
+      };
+    }>;
+    budgetVariance?: {
+      plannedTotal: number;
+      actualTotal: number;
+      variance: number;
+      byDepartment: Array<{
+        department: {
+          id: number;
+          name: string;
+          code: string;
+        };
+        plannedTotal: number;
+        actualTotal: number;
+        variance: number;
+      }>;
+    };
   };
+}
+
+export interface StatusReportListResponse {
+  reports: ReportSummary[];
+}
+
+export interface RiskListResponse {
+  risks: RiskSummary[];
 }
 
 export interface NotificationItem {

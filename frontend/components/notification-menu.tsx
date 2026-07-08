@@ -27,7 +27,7 @@ function formatNotificationMeta(item: NotificationItem) {
 }
 
 export function NotificationMenu() {
-  const { accessTokenState } = useSessionState();
+  const { accessToken, accessTokenState } = useSessionState();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -38,7 +38,7 @@ export function NotificationMenu() {
   );
 
   useEffect(() => {
-    if (accessTokenState !== 'ready') {
+    if (accessTokenState !== 'ready' || !accessToken) {
       return;
     }
 
@@ -50,7 +50,12 @@ export function NotificationMenu() {
     const load = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/notifications', { cache: 'no-store' });
+        const response = await fetch('/api/notifications', {
+          cache: 'no-store',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         if (!response.ok || !active) return;
         const payload = (await response.json()) as NotificationsResponse;
         setItems(payload.notifications);
@@ -65,11 +70,18 @@ export function NotificationMenu() {
       active = false;
       clearInterval(timer);
     };
-  }, [accessTokenState]);
+  }, [accessToken, accessTokenState]);
 
   const markRead = async (id: number) => {
+    if (!accessToken) {
+      return;
+    }
+
     const response = await fetch(`/api/notifications/${id}/read`, {
       method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
     if (!response.ok) {
       return;

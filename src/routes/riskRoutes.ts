@@ -4,9 +4,93 @@ import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
 import { createRiskSchema, updateRiskSchema } from '../utils/validation';
+import { getAccessibleProjectWhere } from '../utils/access';
 import { notifyAdminsAndExecs } from '../utils/notifications';
 
 const router = Router();
+
+router.get('/risks', authenticate, authorize('ADMIN', 'EXECUTIVE', 'MANAGER', 'CONTRIBUTOR', 'VIEWER'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthenticated');
+    }
+
+    const projectId = typeof req.query.projectId === 'string' ? Number(req.query.projectId) : undefined;
+    const includeResolved = req.query.includeResolved === 'true';
+    const mine = req.query.mine === 'true';
+
+    const risks = await prisma.risk.findMany({
+      where: {
+        ...(projectId ? { projectId } : {}),
+        ...(mine ? { ownerId: req.user.sub } : {}),
+        ...(includeResolved ? {} : { resolvedAt: null }),
+        project: getAccessibleProjectWhere(req.user),
+      },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        description: true,
+        severity: true,
+        likelihood: true,
+        mitigationPlan: true,
+        ownerId: true,
+        isEscalated: true,
+        resolvedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      risks: risks.map((risk) => ({
+        id: risk.id,
+        projectId: risk.projectId,
+        title: risk.title,
+        description: risk.description,
+        severity: risk.severity,
+        likelihood: risk.likelihood,
+        mitigationPlan: risk.mitigationPlan,
+        ownerId: risk.ownerId,
+        isEscalated: risk.isEscalated,
+        resolvedAt: risk.resolvedAt,
+        createdAt: risk.createdAt,
+        updatedAt: risk.updatedAt,
+        owner: {
+          id: risk.owner.id,
+          fullName: `${risk.owner.firstName} ${risk.owner.lastName}`,
+          email: risk.owner.email,
+        },
+        project: risk.project,
+      })),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 router.post('/projects/:id/risks', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

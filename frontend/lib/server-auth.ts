@@ -8,6 +8,8 @@ import type {
   PortfolioResponse,
   ProjectDetailResponse,
   ProjectListResponse,
+  RiskListResponse,
+  StatusReportListResponse,
   StatusReportDetailResponse,
   UserRole,
 } from './types';
@@ -15,6 +17,8 @@ import type {
 type ProtectedResponseMap = {
   '/projects': ProjectListResponse;
   '/dashboard/portfolio': PortfolioResponse;
+  '/status-reports': StatusReportListResponse;
+  '/risks': RiskListResponse;
 };
 
 export async function tryGetServerSession() {
@@ -97,4 +101,38 @@ export async function getProjectDetail(projectId: number, accessToken: string) {
 export async function getStatusReportDetail(reportId: number, accessToken: string) {
   const response = await fetchProtected(`/status-reports/${reportId}`, accessToken);
   return (await response.json()) as StatusReportDetailResponse;
+}
+
+export async function getStatusReportsList(
+  accessToken: string,
+  params?: {
+    mine?: boolean;
+    status?: 'DRAFT' | 'SUBMITTED' | 'PUBLISHED';
+    projectId?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  if (params?.mine) query.set('mine', 'true');
+  if (params?.status) query.set('status', params.status);
+  if (params?.projectId) query.set('projectId', String(params.projectId));
+  const suffix = query.size ? `?${query.toString()}` : '';
+  const response = await fetchProtected(`/status-reports${suffix}`, accessToken);
+  return (await response.json()) as StatusReportListResponse;
+}
+
+export async function getRiskList(
+  accessToken: string,
+  params?: {
+    mine?: boolean;
+    includeResolved?: boolean;
+    projectId?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  if (params?.mine) query.set('mine', 'true');
+  if (params?.includeResolved) query.set('includeResolved', 'true');
+  if (params?.projectId) query.set('projectId', String(params.projectId));
+  const suffix = query.size ? `?${query.toString()}` : '';
+  const response = await fetchProtected(`/risks${suffix}`, accessToken);
+  return (await response.json()) as RiskListResponse;
 }

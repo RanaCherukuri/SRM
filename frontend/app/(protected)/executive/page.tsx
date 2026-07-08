@@ -20,6 +20,50 @@ export default async function ExecutiveDashboardPage() {
           <p>Open risks: {portfolio.totals.openRisks}</p>
         </div>
       </section>
+      <section className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-900/70 p-6 lg:grid-cols-2">
+        <div>
+          <h2 className="text-lg font-semibold text-white">RAG rollup by department</h2>
+          <div className="mt-3 grid gap-2 text-sm text-slate-300">
+            {portfolio.ragCountsByDepartment?.map((entry) => (
+              <p key={entry.department.id}>
+                {entry.department.name}: G {entry.green} · A {entry.amber} · R {entry.red} · U {entry.unknown}
+              </p>
+            ))}
+            {!portfolio.ragCountsByDepartment?.length ? <p className="text-slate-400">No department rollup data.</p> : null}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-white">Budget variance summary</h2>
+          <p className="mt-3 text-sm text-slate-300">
+            Portfolio planned: {portfolio.budgetVariance?.plannedTotal.toLocaleString() ?? 0}
+          </p>
+          <p className="text-sm text-slate-300">
+            Portfolio actual: {portfolio.budgetVariance?.actualTotal.toLocaleString() ?? 0}
+          </p>
+          <p className="text-sm text-slate-300">
+            Variance: {portfolio.budgetVariance?.variance.toLocaleString() ?? 0}
+          </p>
+          <div className="mt-3 grid gap-1 text-xs text-slate-400">
+            {portfolio.budgetVariance?.byDepartment.map((entry) => (
+              <p key={entry.department.id}>
+                {entry.department.code}: {entry.variance.toLocaleString()}
+              </p>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+        <h2 className="text-lg font-semibold text-white">Overdue / at-risk projects</h2>
+        <div className="mt-3 grid gap-2 text-sm text-slate-300">
+          {portfolio.overdueProjects?.map((project) => (
+            <p key={project.id}>
+              {project.name} ({project.code}) · planned end {project.plannedEndDate ? new Date(project.plannedEndDate).toLocaleDateString() : 'N/A'} · health {project.health}{' '}
+              {project.isAtRisk ? '· at risk' : ''}
+            </p>
+          ))}
+          {!portfolio.overdueProjects?.length ? <p className="text-slate-400">No overdue projects right now.</p> : null}
+        </div>
+      </section>
       <div className="grid gap-4">
         {portfolio.projects.map((project) => (
           <article key={project.id} className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">

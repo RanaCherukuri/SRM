@@ -6,26 +6,31 @@ function getBearerToken(request: Request) {
   if (!authorization || !authorization.startsWith('Bearer ')) {
     return null;
   }
-
   return authorization.slice(7);
 }
 
-export async function GET(request: Request) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const accessToken = getBearerToken(request);
   if (!accessToken) {
     return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
   }
 
-  const url = new URL(request.url);
-  const unreadSuffix = url.searchParams.get('unread') === 'true' ? '?unread=true' : '';
+  const reportId = Number((await params).id);
+  const body = await request.json();
 
-  const response = await fetch(`${getApiBaseUrl()}/notifications${unreadSuffix}`, {
+  const response = await fetch(`${getApiBaseUrl()}/status-reports/${reportId}`, {
+    method: 'PATCH',
     headers: {
+      'content-type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
+    body: JSON.stringify(body),
     cache: 'no-store',
   });
-  const payload = await response.json().catch(() => ({ error: 'Failed to fetch notifications' }));
 
+  const payload = await response.json().catch(() => ({ error: 'Failed to update report' }));
   return NextResponse.json(payload, { status: response.status });
 }

@@ -18,7 +18,7 @@ export default async function ViewerProjectPage({
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">Viewer project view</p>
         <h1 className="mt-3 text-3xl font-semibold text-white">Granted-project read-only detail</h1>
       </section>
-      <ProjectDetailPanel project={project} />
+      <ProjectDetailPanel project={project} reportBasePath="/viewer/reports" />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { ContributorReportEditor } from '@/components/contributor-report-editor';
 import { ReportDetailPanel } from '@/components/report-detail';
 import { getStatusReportDetail, requireRole, requireServerSession } from '@/lib/server-auth';
 
@@ -27,6 +28,7 @@ export default async function ContributorReportPage({
         report={report}
         capabilityLabel="Contributors can edit and submit only the reports they authored. This route redirects to /forbidden for someone else’s report."
       />
+      <ContributorReportEditor report={report} />
     </div>
   );
 }

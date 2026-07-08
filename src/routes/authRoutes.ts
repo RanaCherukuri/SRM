@@ -12,6 +12,7 @@ import { HttpError } from '../middleware/errorHandler';
 import { authenticate, authorize, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
+const REFRESH_ROTATION_GRACE_MS = 15_000;
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -136,16 +137,21 @@ router.post('/refresh', async (req, res, next) => {
 
     const payload = verifyRefreshToken(rawToken);
 
-    // Check DB record exists, is not revoked, and is not expired
+    // Check DB record exists and is not expired.
+    // Revoked tokens are accepted only during a short grace window to absorb
+    // near-simultaneous refresh calls (SSR + hydration, tab races).
     const record = await prisma.refreshToken.findUnique({ where: { jti: payload.jti } });
     if (!record) {
       throw new HttpError(401, 'Refresh token not recognised');
     }
-    if (record.revokedAt) {
-      throw new HttpError(401, 'Refresh token has been revoked');
-    }
     if (record.expiresAt < new Date()) {
       throw new HttpError(401, 'Refresh token has expired');
+    }
+    if (
+      record.revokedAt &&
+      Date.now() - record.revokedAt.getTime() > REFRESH_ROTATION_GRACE_MS
+    ) {
+      throw new HttpError(401, 'Refresh token has been revoked');
     }
 
     const user = await prisma.user.findUnique({
@@ -157,14 +163,14 @@ router.post('/refresh', async (req, res, next) => {
       throw new HttpError(401, 'Session user no longer exists');
     }
 
-    // Rotate: revoke old token, issue new one
+    // Rotate: old token is revoked, new token is issued.
     const newPayload = { sub: user.id, role: user.role, departmentId: user.departmentId };
     const accessToken = signAccessToken(newPayload);
     const { token: newRefreshToken, jti: newJti } = signRefreshToken(newPayload);
 
     await prisma.$transaction([
-      prisma.refreshToken.update({
-        where: { jti: payload.jti },
+      prisma.refreshToken.updateMany({
+        where: { jti: payload.jti, revokedAt: null },
         data: { revokedAt: new Date() },
       }),
       prisma.refreshToken.create({

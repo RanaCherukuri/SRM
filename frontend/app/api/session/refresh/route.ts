@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getApiBaseUrl, getSessionCookieName } from '@/lib/backend';
+import {
+  extractRefreshToken,
+  getApiBaseUrl,
+  getSessionCookieName,
+  getSessionCookieOptions,
+} from '@/lib/backend';
 
 export async function POST(request: Request) {
   const refreshToken = request.headers
@@ -22,5 +27,18 @@ export async function POST(request: Request) {
   });
 
   const payload = await response.json().catch(() => ({ error: 'Refresh failed' }));
-  return NextResponse.json(payload, { status: response.status });
+  const nextResponse = NextResponse.json(payload, { status: response.status });
+
+  if (response.ok) {
+    const rotatedRefreshToken = extractRefreshToken(response.headers.get('set-cookie'));
+    if (rotatedRefreshToken) {
+      nextResponse.cookies.set({
+        name: getSessionCookieName(),
+        value: rotatedRefreshToken,
+        ...getSessionCookieOptions(),
+      });
+    }
+  }
+
+  return nextResponse;
 }
