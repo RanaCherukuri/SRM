@@ -86,6 +86,7 @@ model User {
   ownedRisks     Risk[]      @relation("RiskOwner")
   projectVisibilityGrants ProjectVisibilityGrant[]
   refreshTokens           RefreshToken[]
+  notifications           Notification[]
 
   @@index([role])
   @@index([departmentId])
@@ -193,6 +194,21 @@ model Budget {
   @@index([projectId])
   @@index([periodStart])
   @@index([projectId, year, quarter])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([createdAt])
 }
 
 model RefreshToken {

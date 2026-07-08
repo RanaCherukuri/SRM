@@ -4,6 +4,7 @@ import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
 import { createRiskSchema, updateRiskSchema } from '../utils/validation';
+import { notifyAdminsAndExecs } from '../utils/notifications';
 
 const router = Router();
 
@@ -48,13 +49,11 @@ router.post('/projects/:id/risks', authenticate, authorize('CONTRIBUTOR', 'MANAG
     });
 
     if (result.escalated) {
-      void (async () => {
-        try {
-          console.info(`[notification] Critical risk escalation notification queued for project ${projectId}`);
-        } catch (notificationError) {
-          console.error('Notification delivery failed after risk creation', notificationError);
-        }
-      })();
+      notifyAdminsAndExecs('CRITICAL_RISK_ESCALATED', {
+        riskId: result.risk.id,
+        projectId: result.risk.projectId,
+        title: result.risk.title,
+      });
     }
 
     return res.status(201).json({ result });
@@ -106,13 +105,11 @@ router.patch('/risks/:id', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), re
     });
 
     if (result.escalated) {
-      void (async () => {
-        try {
-          console.info(`[notification] Critical risk escalation notification queued for risk ${riskId}`);
-        } catch (notificationError) {
-          console.error('Notification delivery failed after risk update', notificationError);
-        }
-      })();
+      notifyAdminsAndExecs('CRITICAL_RISK_ESCALATED', {
+        riskId: result.risk.id,
+        projectId: result.risk.projectId,
+        title: result.risk.title,
+      });
     }
 
     return res.status(200).json({ result });

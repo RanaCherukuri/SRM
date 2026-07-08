@@ -9,6 +9,7 @@ import projectRoutes from './routes/projectRoutes';
 import reportRoutes from './routes/reportRoutes';
 import riskRoutes from './routes/riskRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/projects', projectRoutes);
 app.use(reportRoutes);
 app.use(riskRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/notifications', notificationRoutes);
 
 app.use(errorHandler);
 

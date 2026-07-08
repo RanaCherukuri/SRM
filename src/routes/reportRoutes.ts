@@ -5,6 +5,7 @@ import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest }
 import { HttpError } from '../middleware/errorHandler';
 import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema } from '../utils/validation';
 import { hasProjectAccess } from '../utils/access';
+import { notifyAdminsAndExecs } from '../utils/notifications';
 
 const router = Router();
 
@@ -325,9 +326,12 @@ router.post('/status-reports/:id/publish', authenticate, authorize('MANAGER'), r
             select: { id: true, name: true },
           });
 
-          if (department) {
-            console.info(`[notification] Publish notification queued for project ${transactionResult.project.id} in department ${department.name}`);
-          }
+          notifyAdminsAndExecs('RAG_RED_PUBLISHED', {
+            projectId: transactionResult.project.id,
+            reportId: transactionResult.reportId,
+            departmentId: department?.id ?? null,
+            departmentName: department?.name ?? null,
+          });
         } catch (notificationError) {
           console.error('Notification delivery failed after publish', notificationError);
         }
