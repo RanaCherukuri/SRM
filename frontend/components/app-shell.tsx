@@ -22,13 +22,13 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+      <header className="border-b border-slate-700/40 bg-slate-950/55 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <Link href={getRoleHomePath(user.role)} className="text-lg font-semibold text-white">
+            <Link href={getRoleHomePath(user.role)} className="text-xl font-semibold text-slate-50">
               SRM Frontend
             </Link>
-            <p className="text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-300">
               Signed in as {user.email} · {getRoleLabel(user.role)}
               {user.departmentId ? ` · Department ${user.departmentId}` : ''}
             </p>
@@ -38,7 +38,7 @@ export function AppShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-full border border-slate-800 px-3 py-1.5 text-sm text-slate-300 transition hover:border-slate-600 hover:text-white"
+                className="soft-action px-3 py-1.5 text-sm"
               >
                 {link.label}
               </Link>
@@ -49,7 +49,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">{children}</main>
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">{children}</main>
     </div>
   );
 }

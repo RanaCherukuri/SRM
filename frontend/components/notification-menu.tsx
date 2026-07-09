@@ -104,7 +104,7 @@ export function NotificationMenu() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="relative rounded-full border border-slate-800 px-3 py-1.5 text-sm text-slate-300 transition hover:border-slate-600 hover:text-white"
+        className="soft-action relative px-3 py-1.5 text-sm"
       >
         Notifications
         {unreadCount > 0 ? (
@@ -115,15 +115,15 @@ export function NotificationMenu() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-20 mt-2 w-96 rounded-2xl border border-slate-800 bg-slate-950 p-3 shadow-2xl">
+        <div className="absolute right-0 z-20 mt-2 w-96 rounded-2xl border border-slate-700/60 bg-slate-950/94 p-3 shadow-2xl backdrop-blur-xl">
           <div className="mb-2 flex items-center justify-between px-2">
-            <p className="text-sm font-semibold text-white">Notifications</p>
-            {loading ? <p className="text-xs text-slate-400">Refreshing…</p> : null}
+            <p className="text-sm font-semibold text-slate-50">Notifications</p>
+            {loading ? <p className="text-xs text-slate-300">Refreshing…</p> : null}
           </div>
 
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-sm text-slate-400">
+              <p className="surface-inset p-3 text-sm text-slate-300">
                 No notifications yet.
               </p>
             ) : (
@@ -132,15 +132,15 @@ export function NotificationMenu() {
                   key={item.id}
                   className={`rounded-xl border p-3 ${
                     item.readAt
-                      ? 'border-slate-800 bg-slate-900/70'
-                      : 'border-violet-600/40 bg-violet-900/20'
+                      ? 'border-slate-700/50 bg-slate-900/70'
+                      : 'border-violet-400/35 bg-violet-900/22'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-white">{formatNotificationTitle(item)}</p>
-                      <p className="mt-1 text-xs text-slate-400">{formatNotificationMeta(item)}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-slate-50">{formatNotificationTitle(item)}</p>
+                      <p className="mt-1 text-xs text-slate-300">{formatNotificationMeta(item)}</p>
+                      <p className="mt-1 text-xs text-slate-400">
                         {new Date(item.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -148,7 +148,7 @@ export function NotificationMenu() {
                       <button
                         type="button"
                         onClick={() => void markRead(item.id)}
-                        className="rounded-full border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:border-slate-500"
+                        className="soft-action px-2 py-1 text-xs"
                       >
                         Mark read
                       </button>

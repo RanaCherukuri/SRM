@@ -4,15 +4,24 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSessionState } from './session-provider';
 
+function getErrorMessage(payload: unknown) {
+  if (payload && typeof payload === 'object' && 'error' in payload) {
+    const raw = (payload as { error?: unknown }).error;
+    if (typeof raw === 'string') return raw;
+    if (raw && typeof raw === 'object') return JSON.stringify(raw);
+  }
+  return 'Create failed';
+}
+
 export function ContributorReportCreateForm({ projectId }: { projectId: number }) {
   const router = useRouter();
-  const { accessToken } = useSessionState();
-  const [year, setYear] = useState(new Date().getUTCFullYear());
-  const [month, setMonth] = useState(new Date().getUTCMonth() + 1);
-  const [dueDate, setDueDate] = useState('');
+  const { accessToken, accessTokenState } = useSessionState();
+  const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
   const [rag, setRag] = useState<'GREEN' | 'AMBER' | 'RED'>('AMBER');
   const [progressPercentage, setProgressPercentage] = useState(0);
-  const [summary, setSummary] = useState('');
+  const [yesterdayWork, setYesterdayWork] = useState('');
+  const [todayWork, setTodayWork] = useState('');
+  const [tomorrowWork, setTomorrowWork] = useState('');
   const [blockers, setBlockers] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,7 +32,7 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
       onSubmit={async (event) => {
         event.preventDefault();
         if (!accessToken) {
-          setError('Session access token unavailable.');
+          setError('Session still loading. Please wait a second and try again.');
           return;
         }
 
@@ -37,19 +46,20 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
-            year,
-            month,
-            dueDate: new Date(dueDate).toISOString(),
+            reportDate,
+            clientTimezoneOffsetMinutes: new Date().getTimezoneOffset(),
             rag,
             progressPercentage,
-            summary: summary || undefined,
+            yesterdayWork,
+            todayWork,
+            tomorrowWork,
             blockers: blockers || undefined,
           }),
         });
 
         const payload = await response.json().catch(() => ({ error: 'Create failed' }));
         if (!response.ok || !payload.report?.id) {
-          setError(payload.error ?? 'Create failed');
+          setError(getErrorMessage(payload));
           setPending(false);
           return;
         }
@@ -58,38 +68,14 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
         router.refresh();
       }}
     >
-      <h3 className="text-lg font-semibold text-white">Create draft report</h3>
+      <h3 className="text-lg font-semibold text-white">Create daily scrum report</h3>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-2 text-sm text-slate-300">
-          Year
+          Report date
           <input
-            type="number"
-            min={2000}
-            max={2100}
-            value={year}
-            onChange={(event) => setYear(Number(event.target.value))}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
-            required
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Month
-          <input
-            type="number"
-            min={1}
-            max={12}
-            value={month}
-            onChange={(event) => setMonth(Number(event.target.value))}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
-            required
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Due date (UTC)
-          <input
-            type="datetime-local"
-            value={dueDate}
-            onChange={(event) => setDueDate(event.target.value)}
+            type="date"
+            value={reportDate}
+            onChange={(event) => setReportDate(event.target.value)}
             className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
             required
           />
@@ -119,16 +105,37 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
         />
       </label>
       <label className="grid gap-2 text-sm text-slate-300">
-        Summary
+        What did I do yesterday?
         <textarea
-          value={summary}
-          onChange={(event) => setSummary(event.target.value)}
+          value={yesterdayWork}
+          onChange={(event) => setYesterdayWork(event.target.value)}
           rows={3}
           className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          required
         />
       </label>
       <label className="grid gap-2 text-sm text-slate-300">
-        Blockers
+        What will I do today?
+        <textarea
+          value={todayWork}
+          onChange={(event) => setTodayWork(event.target.value)}
+          rows={3}
+          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          required
+        />
+      </label>
+      <label className="grid gap-2 text-sm text-slate-300">
+        What will I do tomorrow?
+        <textarea
+          value={tomorrowWork}
+          onChange={(event) => setTomorrowWork(event.target.value)}
+          rows={3}
+          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          required
+        />
+      </label>
+      <label className="grid gap-2 text-sm text-slate-300">
+        Any blockers?
         <textarea
           value={blockers}
           onChange={(event) => setBlockers(event.target.value)}
@@ -139,10 +146,10 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || accessTokenState !== 'ready'}
         className="w-fit rounded-full border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-60"
       >
-        {pending ? 'Creating…' : 'Create draft'}
+        {pending ? 'Creating…' : accessTokenState !== 'ready' ? 'Preparing session…' : 'Create draft'}
       </button>
     </form>
   );

@@ -13,7 +13,7 @@ export function SessionStatus() {
         : 'Client token: unavailable';
 
   return (
-    <span className="rounded-full border border-emerald-700/50 bg-emerald-950/60 px-3 py-1.5 text-xs font-medium text-emerald-200">
+    <span className="rounded-full border border-emerald-400/30 bg-emerald-950/45 px-3 py-1.5 text-xs font-medium text-emerald-100">
       {label}
     </span>
   );

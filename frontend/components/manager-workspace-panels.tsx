@@ -20,20 +20,20 @@ export function ManagerWorkspacePanels({
 
   return (
     <div className="grid gap-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <h2 className="text-xl font-semibold text-white">Publish queue (SUBMITTED)</h2>
+      <section className="surface-card p-6">
+        <h2 className="text-xl font-semibold text-slate-50">Publish queue (SUBMITTED)</h2>
         <div className="mt-4 grid gap-3">
           {submittedReports.length === 0 ? (
-            <p className="text-sm text-slate-400">No submitted reports are waiting for manager action.</p>
+            <p className="text-sm text-slate-300">No submitted reports are waiting for manager action.</p>
           ) : (
             submittedReports.map((report) => (
-              <article key={report.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
+              <article key={report.id} className="surface-inset p-4 text-sm text-slate-200">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p>
                       #{report.id} · {report.project.name} ({report.project.code}) · <RagBadge value={report.rag} />
                     </p>
-                    <p className="text-slate-400">Author: {report.createdBy.fullName}</p>
+                    <p className="text-slate-300">Author: {report.createdBy.fullName}</p>
                   </div>
                   <button
                     type="button"
@@ -74,18 +74,18 @@ export function ManagerWorkspacePanels({
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <h2 className="text-xl font-semibold text-white">Risk register (unresolved)</h2>
+      <section className="surface-card p-6">
+        <h2 className="text-xl font-semibold text-slate-50">Risk register (unresolved)</h2>
         <div className="mt-4 grid gap-3">
           {risks.length === 0 ? (
-            <p className="text-sm text-slate-400">No unresolved risks in your department scope.</p>
+            <p className="text-sm text-slate-300">No unresolved risks in your department scope.</p>
           ) : (
             risks.map((risk) => (
-              <article key={risk.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
+              <article key={risk.id} className="surface-inset p-4 text-sm text-slate-200">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p>{risk.title} · {risk.project.code} · {risk.severity}/{risk.likelihood}</p>
-                    <p className="text-slate-400">Owner: {risk.owner.fullName}</p>
+                    <p className="text-slate-300">Owner: {risk.owner.fullName}</p>
                   </div>
                   <button
                     type="button"

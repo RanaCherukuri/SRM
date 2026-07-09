@@ -3,11 +3,47 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { authenticate, authorize, requireDepartmentScope, AuthenticatedRequest } from '../middleware/auth';
 import { HttpError } from '../middleware/errorHandler';
-import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema, computeReportingPeriod } from '../utils/validation';
+import { createStatusReportSchema, publishStatusReportSchema, updateStatusReportSchema, computeLocalDayEndUtc, computeReportingPeriod } from '../utils/validation';
 import { getAccessibleProjectWhere, hasProjectAccess } from '../utils/access';
 import { notifyAdminsAndExecs } from '../utils/notifications';
 
 const router = Router();
+
+function formatDailySummary(yesterdayWork: string, todayWork: string, tomorrowWork: string) {
+  return [
+    `Yesterday: ${yesterdayWork}`,
+    `Today: ${todayWork}`,
+    `Tomorrow: ${tomorrowWork}`,
+  ].join('\n\n');
+}
+
+function parseDailySummary(summary: string | null | undefined) {
+  if (!summary) {
+    return {
+      yesterdayWork: '',
+      todayWork: '',
+      tomorrowWork: '',
+    };
+  }
+
+  const match = summary.match(
+    /^Yesterday:\s*([\s\S]*?)\n\nToday:\s*([\s\S]*?)\n\nTomorrow:\s*([\s\S]*)$/m,
+  );
+
+  if (!match) {
+    return {
+      yesterdayWork: summary,
+      todayWork: '',
+      tomorrowWork: '',
+    };
+  }
+
+  return {
+    yesterdayWork: match[1].trim(),
+    todayWork: match[2].trim(),
+    tomorrowWork: match[3].trim(),
+  };
+}
 
 router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR', 'MANAGER'), requireDepartmentScope('project'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -22,22 +58,54 @@ router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR
       throw new HttpError(401, 'Unauthenticated');
     }
 
-    const { reportingPeriodStart, reportingPeriodEnd } = computeReportingPeriod(
-      parsed.data.year,
-      parsed.data.month,
+    const { reportingPeriodStart, reportingPeriodEnd } = computeReportingPeriod(parsed.data.reportDate);
+    const sameUserSameDay = await prisma.statusReport.findFirst({
+      where: {
+        projectId,
+        createdById: userId,
+        reportingPeriodStart: {
+          gte: reportingPeriodStart,
+          lte: reportingPeriodEnd,
+        },
+      },
+      select: { id: true },
+    });
+    if (sameUserSameDay) {
+      return res.status(409).json({ error: 'You already created a daily report for this project/date' });
+    }
+
+    const reportsForProjectDay = await prisma.statusReport.count({
+      where: {
+        projectId,
+        reportingPeriodStart: {
+          gte: reportingPeriodStart,
+          lte: reportingPeriodEnd,
+        },
+      },
+    });
+    const periodOffsetMs = reportsForProjectDay;
+    const uniquePeriodStart = new Date(reportingPeriodStart.getTime() + periodOffsetMs);
+    const uniquePeriodEnd = new Date(reportingPeriodEnd.getTime() + periodOffsetMs);
+    const editableUntil = computeLocalDayEndUtc(
+      parsed.data.reportDate,
+      parsed.data.clientTimezoneOffsetMinutes,
     );
 
     const report = await prisma.statusReport.create({
       data: {
         projectId,
         createdById: userId,
-        reportingPeriodStart,
-        reportingPeriodEnd,
-        dueDate: new Date(parsed.data.dueDate),
+        reportingPeriodStart: uniquePeriodStart,
+        reportingPeriodEnd: uniquePeriodEnd,
+        dueDate: editableUntil,
         status: 'DRAFT',
         rag: (parsed.data.rag ?? 'AMBER') as 'GREEN' | 'AMBER' | 'RED',
         progressPercentage: parsed.data.progressPercentage ?? 0,
-        summary: parsed.data.summary,
+        summary: formatDailySummary(
+          parsed.data.yesterdayWork,
+          parsed.data.todayWork,
+          parsed.data.tomorrowWork,
+        ),
         blockers: parsed.data.blockers,
       },
     });
@@ -45,7 +113,7 @@ router.post('/projects/:id/status-reports', authenticate, authorize('CONTRIBUTOR
     return res.status(201).json({ report });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return res.status(409).json({ error: 'A report for this project and reporting period already exists' });
+      return res.status(409).json({ error: 'A daily report for this project/date already exists' });
     }
     return next(error);
   }
@@ -60,12 +128,27 @@ router.get('/status-reports', authenticate, authorize('ADMIN', 'EXECUTIVE', 'MAN
     const mine = req.query.mine === 'true';
     const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : undefined;
     const projectId = typeof req.query.projectId === 'string' ? Number(req.query.projectId) : undefined;
+    const createdByIdRaw = typeof req.query.createdById === 'string' ? Number(req.query.createdById) : undefined;
+    const createdById = Number.isFinite(createdByIdRaw) ? createdByIdRaw : undefined;
+    const fromDateRaw = typeof req.query.fromDate === 'string' && req.query.fromDate ? new Date(req.query.fromDate) : undefined;
+    const toDateRaw = typeof req.query.toDate === 'string' && req.query.toDate ? new Date(req.query.toDate) : undefined;
+    const fromDate = fromDateRaw && !Number.isNaN(fromDateRaw.getTime()) ? fromDateRaw : undefined;
+    const toDate = toDateRaw && !Number.isNaN(toDateRaw.getTime()) ? toDateRaw : undefined;
 
     const reports = await prisma.statusReport.findMany({
       where: {
         ...(mine ? { createdById: req.user.sub } : {}),
         ...(status && ['DRAFT', 'SUBMITTED', 'PUBLISHED'].includes(status) ? { status: status as 'DRAFT' | 'SUBMITTED' | 'PUBLISHED' } : {}),
         ...(projectId ? { projectId } : {}),
+        ...(createdById ? { createdById } : {}),
+        ...((fromDate || toDate)
+          ? {
+              reportingPeriodStart: {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {}),
+              },
+            }
+          : {}),
         project: getAccessibleProjectWhere(req.user),
       },
       orderBy: [{ reportingPeriodEnd: 'desc' }, { id: 'desc' }],
@@ -243,33 +326,42 @@ router.patch('/status-reports/:id', authenticate, authorize('CONTRIBUTOR', 'MANA
       throw new HttpError(404, 'Status report not found');
     }
 
-    if (existing.status !== 'DRAFT') {
-      throw new HttpError(409, 'Only draft reports can be edited');
+    if (existing.status !== 'DRAFT' && existing.status !== 'SUBMITTED') {
+      throw new HttpError(409, 'Only draft/submitted reports can be edited');
     }
 
     if (req.user?.role === 'CONTRIBUTOR' && existing.createdById !== userId) {
-      throw new HttpError(403, 'You can only edit your own draft reports');
+      throw new HttpError(403, 'You can only edit your own reports');
+    }
+
+    if (req.user?.role === 'CONTRIBUTOR' && new Date() > existing.dueDate) {
+      throw new HttpError(403, 'Editing window closed at local 11:59 PM');
     }
 
     const updateData: {
-      dueDate?: Date;
       rag?: 'GREEN' | 'AMBER' | 'RED';
       progressPercentage?: number;
       summary?: string | null;
       blockers?: string | null;
     } = {};
 
-    if (parsed.data.dueDate) {
-      updateData.dueDate = new Date(parsed.data.dueDate);
-    }
     if (parsed.data.rag) {
       updateData.rag = parsed.data.rag as 'GREEN' | 'AMBER' | 'RED';
     }
     if (parsed.data.progressPercentage !== undefined) {
       updateData.progressPercentage = parsed.data.progressPercentage;
     }
-    if (parsed.data.summary !== undefined) {
-      updateData.summary = parsed.data.summary;
+    if (
+      parsed.data.yesterdayWork !== undefined ||
+      parsed.data.todayWork !== undefined ||
+      parsed.data.tomorrowWork !== undefined
+    ) {
+      const current = parseDailySummary(existing.summary);
+      updateData.summary = formatDailySummary(
+        parsed.data.yesterdayWork ?? current.yesterdayWork,
+        parsed.data.todayWork ?? current.todayWork,
+        parsed.data.tomorrowWork ?? current.tomorrowWork,
+      );
     }
     if (parsed.data.blockers !== undefined) {
       updateData.blockers = parsed.data.blockers;
@@ -302,12 +394,20 @@ router.post('/status-reports/:id/submit', authenticate, authorize('CONTRIBUTOR')
       throw new HttpError(404, 'Status report not found');
     }
 
-    if (existing.status !== 'DRAFT') {
-      throw new HttpError(409, 'Only draft reports can be submitted');
-    }
-
     if (existing.createdById !== userId) {
       throw new HttpError(403, 'You can only submit your own reports');
+    }
+
+    if (new Date() > existing.dueDate) {
+      throw new HttpError(403, 'Submission window closed at local 11:59 PM');
+    }
+
+    if (existing.status === 'SUBMITTED') {
+      return res.status(200).json({ report: existing });
+    }
+
+    if (existing.status !== 'DRAFT') {
+      throw new HttpError(409, 'Only draft reports can be submitted');
     }
 
     const updated = await prisma.statusReport.updateMany({

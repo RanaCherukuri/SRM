@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #e2e8f0;
+  --background: #030712;
+  --foreground: #e5e7eb;
+  --surface-1: rgba(15, 23, 42, 0.72);
+  --surface-2: rgba(2, 6, 23, 0.62);
+  --surface-border: rgba(148, 163, 184, 0.26);
+  --surface-border-strong: rgba(148, 163, 184, 0.44);
 }
 
 @theme inline {
@@ -22,9 +26,57 @@ body {
 }
 
 body {
-  background: radial-gradient(circle at top, rgba(30, 41, 59, 0.9), rgba(2, 6, 23, 1));
+  background:
+    radial-gradient(1200px 650px at 12% -8%, rgba(56, 189, 248, 0.12), transparent 65%),
+    radial-gradient(900px 520px at 88% 0%, rgba(129, 140, 248, 0.1), transparent 60%),
+    linear-gradient(180deg, #0b1220 0%, #020617 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.24);
+  color: #f8fafc;
+}
+
+@layer components {
+  .surface-card {
+    border-radius: 1.25rem;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-1);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.04) inset,
+      0 10px 30px rgba(2, 6, 23, 0.32);
+    backdrop-filter: blur(8px);
+  }
+
+  .surface-inset {
+    border-radius: 1rem;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-2);
+  }
+
+  .soft-action {
+    border-radius: 9999px;
+    border: 1px solid var(--surface-border);
+    background: rgba(15, 23, 42, 0.52);
+    color: #dbeafe;
+    transition: all 160ms ease;
+  }
+
+  .soft-action:hover {
+    border-color: var(--surface-border-strong);
+    background: rgba(30, 41, 59, 0.72);
+    color: #f8fafc;
+  }
 }
 
 a {

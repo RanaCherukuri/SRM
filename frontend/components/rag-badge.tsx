@@ -1,10 +1,10 @@
 type RagTone = 'GREEN' | 'AMBER' | 'RED' | 'UNKNOWN';
 
 const toneClassMap: Record<RagTone, string> = {
-  GREEN: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-  AMBER: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-  RED: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-  UNKNOWN: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  GREEN: 'bg-emerald-400/20 text-emerald-100 border-emerald-300/45',
+  AMBER: 'bg-amber-400/20 text-amber-100 border-amber-300/45',
+  RED: 'bg-rose-400/20 text-rose-100 border-rose-300/45',
+  UNKNOWN: 'bg-slate-400/20 text-slate-100 border-slate-300/45',
 };
 
 function normalizeTone(value: string): RagTone {
@@ -19,7 +19,7 @@ export function RagBadge({ value }: { value: string }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wide ${toneClassMap[tone]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-[0.03em] ${toneClassMap[tone]}`}
     >
       {tone}
     </span>

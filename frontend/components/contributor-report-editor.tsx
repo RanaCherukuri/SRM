@@ -1,40 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { StatusReportDetail } from '@/lib/types';
 import { useSessionState } from './session-provider';
 
+function parseDailySummary(summary: string | null) {
+  if (!summary) {
+    return { yesterdayWork: '', todayWork: '', tomorrowWork: '' };
+  }
+  const match = summary.match(
+    /^Yesterday:\s*([\s\S]*?)\n\nToday:\s*([\s\S]*?)\n\nTomorrow:\s*([\s\S]*)$/m,
+  );
+  if (!match) {
+    return { yesterdayWork: summary, todayWork: '', tomorrowWork: '' };
+  }
+  return {
+    yesterdayWork: match[1].trim(),
+    todayWork: match[2].trim(),
+    tomorrowWork: match[3].trim(),
+  };
+}
+
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (payload && typeof payload === 'object' && 'error' in payload) {
+    const raw = (payload as { error?: unknown }).error;
+    if (typeof raw === 'string') return raw;
+    if (raw && typeof raw === 'object') return JSON.stringify(raw);
+  }
+  return fallback;
+}
+
 export function ContributorReportEditor({ report }: { report: StatusReportDetail }) {
   const router = useRouter();
-  const { accessToken } = useSessionState();
-  const [dueDate, setDueDate] = useState(report.dueDate.slice(0, 16));
+  const { accessToken, accessTokenState } = useSessionState();
+  const initialSummary = useMemo(() => parseDailySummary(report.summary), [report.summary]);
   const [rag, setRag] = useState<'GREEN' | 'AMBER' | 'RED'>(report.rag as 'GREEN' | 'AMBER' | 'RED');
   const [progressPercentage, setProgressPercentage] = useState(report.progressPercentage);
-  const [summary, setSummary] = useState(report.summary ?? '');
+  const [yesterdayWork, setYesterdayWork] = useState(initialSummary.yesterdayWork);
+  const [todayWork, setTodayWork] = useState(initialSummary.todayWork);
+  const [tomorrowWork, setTomorrowWork] = useState(initialSummary.tomorrowWork);
   const [blockers, setBlockers] = useState(report.blockers ?? '');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const editable = report.status === 'DRAFT';
+  const editable = report.status === 'DRAFT' || report.status === 'SUBMITTED';
 
   return (
     <div className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-      <h3 className="text-lg font-semibold text-white">Draft actions</h3>
+      <h3 className="text-lg font-semibold text-white">Daily report actions</h3>
       {!editable ? (
         <p className="text-sm text-slate-400">This report is no longer editable because it is {report.status}.</p>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-slate-300">
-              Due date
-              <input
-                type="datetime-local"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
-              />
-            </label>
             <label className="grid gap-2 text-sm text-slate-300">
               RAG
               <select
@@ -47,29 +66,50 @@ export function ContributorReportEditor({ report }: { report: StatusReportDetail
                 <option value="RED">RED</option>
               </select>
             </label>
+            <label className="grid gap-2 text-sm text-slate-300">
+              Progress %
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={progressPercentage}
+                onChange={(event) => setProgressPercentage(Number(event.target.value))}
+                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              />
+            </label>
           </div>
           <label className="grid gap-2 text-sm text-slate-300">
-            Progress %
-            <input
-              type="number"
-              min={0}
-              max={100}
-              value={progressPercentage}
-              onChange={(event) => setProgressPercentage(Number(event.target.value))}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
-            />
-          </label>
-          <label className="grid gap-2 text-sm text-slate-300">
-            Summary
+            What did I do yesterday?
             <textarea
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
+              value={yesterdayWork}
+              onChange={(event) => setYesterdayWork(event.target.value)}
               rows={3}
               className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              required
             />
           </label>
           <label className="grid gap-2 text-sm text-slate-300">
-            Blockers
+            What will I do today?
+            <textarea
+              value={todayWork}
+              onChange={(event) => setTodayWork(event.target.value)}
+              rows={3}
+              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            What will I do tomorrow?
+            <textarea
+              value={tomorrowWork}
+              onChange={(event) => setTomorrowWork(event.target.value)}
+              rows={3}
+              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Any blockers?
             <textarea
               value={blockers}
               onChange={(event) => setBlockers(event.target.value)}
@@ -80,11 +120,11 @@ export function ContributorReportEditor({ report }: { report: StatusReportDetail
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || accessTokenState !== 'ready'}
               className="rounded-full border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-60"
               onClick={async () => {
                 if (!accessToken) {
-                  setError('Session access token unavailable.');
+                  setError('Session still loading. Please wait a second and try again.');
                   return;
                 }
 
@@ -97,16 +137,17 @@ export function ContributorReportEditor({ report }: { report: StatusReportDetail
                     Authorization: `Bearer ${accessToken}`,
                   },
                   body: JSON.stringify({
-                    dueDate: new Date(dueDate).toISOString(),
                     rag,
                     progressPercentage,
-                    summary: summary || null,
+                    yesterdayWork,
+                    todayWork,
+                    tomorrowWork,
                     blockers: blockers || null,
                   }),
                 });
                 const payload = await response.json().catch(() => ({ error: 'Update failed' }));
                 if (!response.ok) {
-                  setError(payload.error ?? 'Update failed');
+                  setError(getErrorMessage(payload, 'Update failed'));
                   setPending(false);
                   return;
                 }
@@ -114,15 +155,15 @@ export function ContributorReportEditor({ report }: { report: StatusReportDetail
                 router.refresh();
               }}
             >
-              {pending ? 'Saving…' : 'Save draft'}
+              {pending ? 'Saving…' : accessTokenState !== 'ready' ? 'Preparing session…' : 'Save'}
             </button>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || accessTokenState !== 'ready'}
               className="rounded-full border border-emerald-500/50 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200 disabled:opacity-60"
               onClick={async () => {
                 if (!accessToken) {
-                  setError('Session access token unavailable.');
+                  setError('Session still loading. Please wait a second and try again.');
                   return;
                 }
 
@@ -136,7 +177,7 @@ export function ContributorReportEditor({ report }: { report: StatusReportDetail
                 });
                 const payload = await response.json().catch(() => ({ error: 'Submit failed' }));
                 if (!response.ok) {
-                  setError(payload.error ?? 'Submit failed');
+                  setError(getErrorMessage(payload, 'Submit failed'));
                   setPending(false);
                   return;
                 }

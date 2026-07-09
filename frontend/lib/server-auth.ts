@@ -109,12 +109,18 @@ export async function getStatusReportsList(
     mine?: boolean;
     status?: 'DRAFT' | 'SUBMITTED' | 'PUBLISHED';
     projectId?: number;
+    createdById?: number;
+    fromDate?: string;
+    toDate?: string;
   },
 ) {
   const query = new URLSearchParams();
   if (params?.mine) query.set('mine', 'true');
   if (params?.status) query.set('status', params.status);
   if (params?.projectId) query.set('projectId', String(params.projectId));
+  if (params?.createdById) query.set('createdById', String(params.createdById));
+  if (params?.fromDate) query.set('fromDate', params.fromDate);
+  if (params?.toDate) query.set('toDate', params.toDate);
   const suffix = query.size ? `?${query.toString()}` : '';
   const response = await fetchProtected(`/status-reports${suffix}`, accessToken);
   return (await response.json()) as StatusReportListResponse;

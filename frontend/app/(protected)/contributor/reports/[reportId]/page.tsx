@@ -26,7 +26,7 @@ export default async function ContributorReportPage({
       </section>
       <ReportDetailPanel
         report={report}
-        capabilityLabel="Contributors can edit and submit only the reports they authored. This route redirects to /forbidden for someone else’s report."
+        capabilityLabel="Contributors can edit and submit only the reports they authored, and only until local 11:59 PM for that report date. This route redirects to /forbidden for someone else’s report."
       />
       <ContributorReportEditor report={report} />
     </div>

@@ -10,7 +10,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl"
+      className="surface-card flex flex-col gap-4 p-7"
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
@@ -43,20 +43,20 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         }
       }}
     >
-      <label className="flex flex-col gap-2 text-sm text-slate-300">
+      <label className="flex flex-col gap-2 text-sm text-slate-200">
         Email
         <input
-          className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-500"
+          className="rounded-2xl border border-slate-600/60 bg-slate-950/65 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-slate-300">
+      <label className="flex flex-col gap-2 text-sm text-slate-200">
         Password
         <input
-          className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-sky-500"
+          className="rounded-2xl border border-slate-600/60 bg-slate-950/65 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -70,7 +70,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
       ) : null}
       <button
         type="submit"
-        className="rounded-2xl bg-sky-500 px-4 py-3 font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-60"
+        className="rounded-2xl bg-sky-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-60"
         disabled={pending}
       >
         {pending ? 'Signing in…' : 'Sign in'}

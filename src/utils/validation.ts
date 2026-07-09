@@ -1,29 +1,35 @@
 import { z } from 'zod';
 
 export const createStatusReportSchema = z.object({
-  year: z.number().int().min(2000).max(2100),
-  month: z.number().int().min(1).max(12),
-  dueDate: z.string().datetime(),
+  reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  clientTimezoneOffsetMinutes: z.number().int().min(-840).max(840),
   progressPercentage: z.number().int().min(0).max(100).optional(),
-  summary: z.string().optional(),
+  yesterdayWork: z.string().min(1),
+  todayWork: z.string().min(1),
+  tomorrowWork: z.string().min(1),
   blockers: z.string().optional(),
   rag: z.enum(['GREEN', 'AMBER', 'RED']).optional(),
 });
 
 /**
- * Compute canonical period boundaries for a given year+month (UTC).
- * Returns the same timestamps regardless of client timezone or clock,
- * so the unique constraint (projectId, periodStart, periodEnd) reliably
- * catches duplicate periods.
+ * Compute canonical day boundaries for a given yyyy-mm-dd date.
+ * Reporting windows are daily to match scrum updates.
  */
-export function computeReportingPeriod(year: number, month: number): {
+export function computeReportingPeriod(reportDate: string): {
   reportingPeriodStart: Date;
   reportingPeriodEnd: Date;
 } {
-  const reportingPeriodStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  // Last millisecond of the month: advance to first day of next month then subtract 1ms
-  const reportingPeriodEnd = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0) - 1);
+  const [year, month, day] = reportDate.split('-').map(Number);
+  const reportingPeriodStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  const reportingPeriodEnd = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
   return { reportingPeriodStart, reportingPeriodEnd };
+}
+
+export function computeLocalDayEndUtc(reportDate: string, timezoneOffsetMinutes: number) {
+  const [year, month, day] = reportDate.split('-').map(Number);
+  // UTC = local + timezoneOffsetMinutes (same convention as Date#getTimezoneOffset)
+  const utcMillis = Date.UTC(year, month - 1, day, 23, 59, 59, 999) + (timezoneOffsetMinutes * 60 * 1000);
+  return new Date(utcMillis);
 }
 
 export const publishStatusReportSchema = z.object({
@@ -32,9 +38,10 @@ export const publishStatusReportSchema = z.object({
 });
 
 export const updateStatusReportSchema = z.object({
-  dueDate: z.string().datetime().optional(),
   progressPercentage: z.number().int().min(0).max(100).optional(),
-  summary: z.string().optional(),
+  yesterdayWork: z.string().min(1).optional(),
+  todayWork: z.string().min(1).optional(),
+  tomorrowWork: z.string().min(1).optional(),
   blockers: z.string().optional(),
   rag: z.enum(['GREEN', 'AMBER', 'RED']).optional(),
 });
