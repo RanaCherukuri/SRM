@@ -21,7 +21,7 @@ export function ManagerWorkspacePanels({
   return (
     <div className="grid gap-6">
       <section className="surface-card p-6">
-        <h2 className="text-xl font-semibold text-slate-50">Publish queue (SUBMITTED)</h2>
+        <h2 className="section-title">Publish queue (SUBMITTED)</h2>
         <div className="mt-4 grid gap-3">
           {submittedReports.length === 0 ? (
             <p className="text-sm text-slate-300">No submitted reports are waiting for manager action.</p>
@@ -38,7 +38,7 @@ export function ManagerWorkspacePanels({
                   <button
                     type="button"
                     disabled={pendingId === report.id}
-                    className="rounded-full border border-emerald-500/50 bg-emerald-500/20 px-3 py-1.5 font-semibold text-emerald-200 disabled:opacity-60"
+                    className="success-action px-4 py-2 text-sm"
                     onClick={async () => {
                       if (!accessToken) {
                         setError('Session access token unavailable.');
@@ -75,7 +75,7 @@ export function ManagerWorkspacePanels({
       </section>
 
       <section className="surface-card p-6">
-        <h2 className="text-xl font-semibold text-slate-50">Risk register (unresolved)</h2>
+        <h2 className="section-title">Risk register (unresolved)</h2>
         <div className="mt-4 grid gap-3">
           {risks.length === 0 ? (
             <p className="text-sm text-slate-300">No unresolved risks in your department scope.</p>
@@ -90,7 +90,7 @@ export function ManagerWorkspacePanels({
                   <button
                     type="button"
                     disabled={pendingId === risk.id}
-                    className="rounded-full border border-amber-500/50 bg-amber-500/20 px-3 py-1.5 font-semibold text-amber-200 disabled:opacity-60"
+                    className="warn-action px-4 py-2 text-sm"
                     onClick={async () => {
                       if (!accessToken) {
                         setError('Session access token unavailable.');

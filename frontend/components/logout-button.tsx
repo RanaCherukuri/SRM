@@ -8,7 +8,7 @@ export function LogoutButton() {
   return (
     <button
       type="button"
-      className="soft-action px-4 py-2 text-sm disabled:opacity-50"
+      className="soft-action px-4 py-1.5 text-sm"
       onClick={async () => {
         setPending(true);
         await fetch('/api/session/logout', { method: 'POST' });

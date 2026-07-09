@@ -29,7 +29,7 @@ export function ProjectDetailPanel({
       </section>
 
       <section className="surface-card p-6">
-        <h3 className="text-lg font-semibold text-slate-50">Status reports</h3>
+        <h3 className="section-title">Status reports</h3>
         <div className="mt-4 grid gap-3">
           {project.statusReports.map((report) => (
             <article key={report.id} className="surface-inset p-4 text-sm text-slate-200">
@@ -52,7 +52,7 @@ export function ProjectDetailPanel({
       </section>
 
       <section className="surface-card p-6">
-        <h3 className="text-lg font-semibold text-slate-50">Risks</h3>
+        <h3 className="section-title">Risks</h3>
         <div className="mt-4 grid gap-3">
           {project.risks.map((risk) => (
             <article key={risk.id} className="surface-inset p-4 text-sm text-slate-200">
@@ -64,7 +64,7 @@ export function ProjectDetailPanel({
       </section>
 
       <section className="surface-card p-6">
-        <h3 className="text-lg font-semibold text-slate-50">Viewer access grants</h3>
+        <h3 className="section-title">Viewer access grants</h3>
         <div className="mt-4 grid gap-2 text-sm text-slate-200">
           {project.viewerGrants.length ? project.viewerGrants.map((grant) => (
             <p key={grant.id}>{grant.fullName} · {grant.email}</p>

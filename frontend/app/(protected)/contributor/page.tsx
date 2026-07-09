@@ -14,21 +14,18 @@ export default async function ContributorWorkspacePage() {
 
   return (
     <div className="grid gap-6">
-      <section className="surface-card p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">Contributor workspace</p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-50">Own draft reports and risk logging</h1>
-        <p className="mt-3 text-sm text-slate-200">
+      <section className="hero-card hero-cyan p-7">
+        <p className="eyebrow text-cyan-300">Contributor workspace</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-50">Own draft reports and risk logging</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
           Contributor routes are department-scoped at the project level, and report editing stays limited to the contributor&apos;s own draft reports.
         </p>
       </section>
       <ProjectList projects={projects} basePath="/contributor/projects" />
       <section className="surface-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-50">My report history</h2>
-          <Link
-            href="/contributor/reports"
-            className="rounded-full border border-cyan-500/50 bg-cyan-500/20 px-3 py-1.5 text-sm font-semibold text-cyan-200"
-          >
+          <h2 className="section-title">My report history</h2>
+          <Link href="/contributor/reports" className="primary-action px-4 py-2 text-sm">
             Open full history
           </Link>
         </div>

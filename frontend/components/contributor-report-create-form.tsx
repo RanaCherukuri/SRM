@@ -68,24 +68,24 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
         router.refresh();
       }}
     >
-      <h3 className="text-lg font-semibold text-white">Create daily scrum report</h3>
+      <h3 className="section-title">Create daily scrum report</h3>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="grid gap-2 text-sm text-slate-300">
+        <label className="field-label">
           Report date
           <input
             type="date"
             value={reportDate}
             onChange={(event) => setReportDate(event.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+            className="field-input"
             required
           />
         </label>
-        <label className="grid gap-2 text-sm text-slate-300">
+        <label className="field-label">
           RAG
           <select
             value={rag}
             onChange={(event) => setRag(event.target.value as 'GREEN' | 'AMBER' | 'RED')}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+            className="field-input"
           >
             <option value="GREEN">GREEN</option>
             <option value="AMBER">AMBER</option>
@@ -93,7 +93,7 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
           </select>
         </label>
       </div>
-      <label className="grid gap-2 text-sm text-slate-300">
+      <label className="field-label">
         Progress %
         <input
           type="number"
@@ -101,53 +101,53 @@ export function ContributorReportCreateForm({ projectId }: { projectId: number }
           max={100}
           value={progressPercentage}
           onChange={(event) => setProgressPercentage(Number(event.target.value))}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          className="field-input"
         />
       </label>
-      <label className="grid gap-2 text-sm text-slate-300">
+      <label className="field-label">
         What did I do yesterday?
         <textarea
           value={yesterdayWork}
           onChange={(event) => setYesterdayWork(event.target.value)}
           rows={3}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          className="field-input"
           required
         />
       </label>
-      <label className="grid gap-2 text-sm text-slate-300">
+      <label className="field-label">
         What will I do today?
         <textarea
           value={todayWork}
           onChange={(event) => setTodayWork(event.target.value)}
           rows={3}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          className="field-input"
           required
         />
       </label>
-      <label className="grid gap-2 text-sm text-slate-300">
+      <label className="field-label">
         What will I do tomorrow?
         <textarea
           value={tomorrowWork}
           onChange={(event) => setTomorrowWork(event.target.value)}
           rows={3}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          className="field-input"
           required
         />
       </label>
-      <label className="grid gap-2 text-sm text-slate-300">
+      <label className="field-label">
         Any blockers?
         <textarea
           value={blockers}
           onChange={(event) => setBlockers(event.target.value)}
           rows={3}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+          className="field-input"
         />
       </label>
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <button
         type="submit"
         disabled={pending || accessTokenState !== 'ready'}
-        className="w-fit rounded-full border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-60"
+        className="primary-action w-fit px-5 py-2.5 text-sm"
       >
         {pending ? 'Creating…' : accessTokenState !== 'ready' ? 'Preparing session…' : 'Create draft'}
       </button>

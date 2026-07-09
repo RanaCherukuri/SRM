@@ -37,24 +37,24 @@ export default async function ManagerWorkspacePage({
 
   return (
     <div className="grid gap-6">
-      <section className="surface-card p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300">Manager workspace</p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-50">Department-scoped project control</h1>
-        <p className="mt-3 text-sm text-slate-200">
+      <section className="hero-card hero-emerald p-7">
+        <p className="eyebrow text-emerald-300">Manager workspace</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-50">Department-scoped project control</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
           This namespace expects manager routes to stay inside the manager&apos;s own department, while still allowing report publish authority inside that scope.
         </p>
       </section>
       <ProjectList projects={projects} basePath="/manager/projects" />
       <ManagerWorkspacePanels submittedReports={reports} risks={risks} />
       <section className="surface-card p-6">
-        <h2 className="text-xl font-semibold text-slate-50">Team status lookup</h2>
+        <h2 className="section-title">Team status lookup</h2>
         <form className="mt-4 grid gap-3 md:grid-cols-4">
-          <label className="grid gap-2 text-sm text-slate-200">
+          <label className="field-label">
             Person
             <select
               name="createdById"
               defaultValue={createdByIdParam ? String(createdByIdParam) : ''}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              className="field-input"
             >
               <option value="">All team members</option>
               {peopleOptions.map((option) => (
@@ -64,29 +64,26 @@ export default async function ManagerWorkspacePage({
               ))}
             </select>
           </label>
-          <label className="grid gap-2 text-sm text-slate-200">
+          <label className="field-label">
             From date
             <input
               type="date"
               name="fromDate"
               defaultValue={fromDateParam ?? ''}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              className="field-input"
             />
           </label>
-          <label className="grid gap-2 text-sm text-slate-200">
+          <label className="field-label">
             To date
             <input
               type="date"
               name="toDate"
               defaultValue={toDateParam ?? ''}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+              className="field-input"
             />
           </label>
           <div className="flex items-end">
-            <button
-              type="submit"
-              className="rounded-full border border-indigo-500/50 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-200"
-            >
+            <button type="submit" className="primary-action px-5 py-2.5 text-sm">
               Apply filter
             </button>
           </div>

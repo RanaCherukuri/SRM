@@ -43,20 +43,24 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         }
       }}
     >
-      <label className="flex flex-col gap-2 text-sm text-slate-200">
+      <div>
+        <h2 className="text-xl font-bold text-slate-50">Welcome back</h2>
+        <p className="mt-1 text-sm text-slate-400">Sign in to your workspace</p>
+      </div>
+      <label className="field-label">
         Email
         <input
-          className="rounded-2xl border border-slate-600/60 bg-slate-950/65 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
+          className="field-input"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-slate-200">
+      <label className="field-label">
         Password
         <input
-          className="rounded-2xl border border-slate-600/60 bg-slate-950/65 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
+          className="field-input"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -70,7 +74,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
       ) : null}
       <button
         type="submit"
-        className="rounded-2xl bg-sky-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-60"
+        className="primary-action px-4 py-3"
         disabled={pending}
       >
         {pending ? 'Signing in…' : 'Sign in'}

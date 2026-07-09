@@ -10,19 +10,31 @@ export default async function ExecutiveDashboardPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="surface-card p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-300">Executive dashboard</p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-50">Cross-department read-only portfolio</h1>
-        <div className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-4">
-          <p>Total projects: {portfolio.totals.totalProjects}</p>
-          <p>At risk: {portfolio.totals.atRiskProjects}</p>
-          <p>Published reports: {portfolio.totals.publishedReports}</p>
-          <p>Open risks: {portfolio.totals.openRisks}</p>
+      <section className="hero-card hero-violet p-7">
+        <p className="eyebrow text-violet-300">Executive dashboard</p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-50">Cross-department read-only portfolio</h1>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+          <div className="stat-tile">
+            <p className="stat-value text-slate-50">{portfolio.totals.totalProjects}</p>
+            <p className="stat-label">Total projects</p>
+          </div>
+          <div className="stat-tile">
+            <p className="stat-value text-rose-300">{portfolio.totals.atRiskProjects}</p>
+            <p className="stat-label">At risk</p>
+          </div>
+          <div className="stat-tile">
+            <p className="stat-value text-emerald-300">{portfolio.totals.publishedReports}</p>
+            <p className="stat-label">Published reports</p>
+          </div>
+          <div className="stat-tile">
+            <p className="stat-value text-amber-300">{portfolio.totals.openRisks}</p>
+            <p className="stat-label">Open risks</p>
+          </div>
         </div>
       </section>
       <section className="surface-card grid gap-4 p-6 lg:grid-cols-2">
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">RAG rollup by department</h2>
+          <h2 className="section-title">RAG rollup by department</h2>
           <div className="mt-3 grid gap-2 text-sm text-slate-200">
             {portfolio.ragCountsByDepartment?.map((entry) => (
               <p key={entry.department.id}>
@@ -33,7 +45,7 @@ export default async function ExecutiveDashboardPage() {
           </div>
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">Budget variance summary</h2>
+          <h2 className="section-title">Budget variance summary</h2>
           <p className="mt-3 text-sm text-slate-200">
             Portfolio planned: {portfolio.budgetVariance?.plannedTotal.toLocaleString() ?? 0}
           </p>
@@ -53,7 +65,7 @@ export default async function ExecutiveDashboardPage() {
         </div>
       </section>
       <section className="surface-card p-6">
-        <h2 className="text-lg font-semibold text-slate-50">Overdue / at-risk projects</h2>
+        <h2 className="section-title">Overdue / at-risk projects</h2>
         <div className="mt-3 grid gap-2 text-sm text-slate-200">
           {portfolio.overdueProjects?.map((project) => (
             <p key={project.id}>
