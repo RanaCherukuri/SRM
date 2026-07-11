@@ -1,0 +1,27 @@
+databases:
+  - name: srm-db
+    plan: free
+    databaseName: srm
+    user: srm
+
+services:
+  - type: web
+    name: srm-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: npx prisma db push --skip-generate && node prisma/seed.js && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: srm-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
